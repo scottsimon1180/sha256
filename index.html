@@ -23,12 +23,15 @@
 
         body {
             margin: 0;
-            padding: 0;
+            /* The padding-bottom accounts for the fixed overlay height, 
+               keeping the flex-centered content optically balanced. */
+            padding: 0 0 240px 0; 
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             height: 100vh;
             width: 100vw;
+            box-sizing: border-box;
             overflow: hidden; 
             display: flex;
             flex-direction: column;
@@ -41,8 +44,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 20px; 
-            z-index: 2;
         }
 
         #icon-preview {
@@ -66,12 +67,11 @@
             font-size: 17px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s ease, background-color 0.2s ease;
+            transition: background-color 0.2s ease;
             width: 220px; 
         }
 
         .action-button:active {
-            opacity: 0.7;
             background-color: #e5e5ea;
         }
 
@@ -79,37 +79,7 @@
             display: none;
         }
 
-        /* Initial state instructions typography and layout */
-        #initial-instructions {
-            text-align: center;
-            width: 85%;
-            max-width: 320px;
-            transition: opacity 0.3s ease;
-            z-index: 1;
-        }
-
-        #initial-instructions h2 {
-            font-size: 22px;
-            font-weight: 600;
-            margin: 0 0 16px 0;
-            letter-spacing: -0.5px;
-        }
-
-        .init-list {
-            text-align: left;
-            margin: 0;
-            padding-left: 20px;
-            color: var(--secondary-text);
-            font-size: 15px;
-            line-height: 1.4;
-            font-weight: 500;
-        }
-
-        .init-list li {
-            margin-bottom: 10px;
-        }
-
-        /* Post-selection overlay methodology */
+        /* The overlay is now permanently visible */
         #instruction-overlay {
             position: fixed;
             bottom: 0;
@@ -123,64 +93,56 @@
             flex-direction: column;
             align-items: center;
             border-top: 1px solid rgba(0,0,0,0.1);
-            z-index: 10;
-            
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
         }
 
-        #instruction-overlay.visible {
-            opacity: 1;
-            pointer-events: auto;
+        .overlay-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: var(--text-color);
+            text-align: center;
         }
 
-        /* CSS Grid Implementation for absolute vertical alignment */
         .instruction-list {
-            display: grid;
-            /* Column 1: Number, Column 2: SVG Icon, Column 3: Text */
-            grid-template-columns: min-content 24px 1fr; 
-            align-items: center;
-            row-gap: 16px;
-            column-gap: 12px;
-            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             width: 85%;
             max-width: 320px;
         }
 
         .instruction-step {
-            display: contents; /* Removes the wrapper from the DOM flow to utilize the parent grid */
-        }
-
-        .step-number {
-            font-weight: 600;
-            color: var(--text-color);
-            font-size: 15px;
-        }
-
-        .step-icon {
-            width: 22px;
-            height: 22px;
-            color: var(--accent-color); 
-            justify-self: center; /* Locks the SVG to the horizontal center of its grid cell */
-        }
-
-        .step-text {
+            display: flex;
+            align-items: center;
             font-size: 15px;
             font-weight: 500;
             color: var(--secondary-text);
             line-height: 1.3;
-            text-align: left;
         }
 
-        .step-text strong {
+        .instruction-step strong {
             color: var(--text-color);
+        }
+
+        .step-number {
+            font-weight: 600;
+            margin-right: 8px;
+            color: var(--text-color);
+        }
+
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            color: var(--accent-color); 
         }
 
         .bounce-arrow {
             width: 28px;
             height: 28px;
             color: var(--accent-color);
+            margin-top: 20px;
             animation: bounce 1.5s infinite;
         }
 
@@ -200,36 +162,41 @@
         <input type="file" id="file-input" accept="image/png, image/jpeg" />
     </div>
 
-    <div id="initial-instructions">
-        <h2>Icon Tester</h2>
-        <ol class="init-list">
-            <li>Select an image to use as a custom icon</li>
-            <li>Add the custom icon to your iPhone Home Screen</li>
-        </ol>
-    </div>
-
     <div id="instruction-overlay">
-        <div class="instruction-list">
+        
+        <div id="instructions-initial" class="instruction-list">
+            <h2 class="overlay-title">Icon Tester</h2>
+            <div class="instruction-step">
+                <span class="step-number">1.</span>
+                <span>Select an image to use as a custom icon</span>
+            </div>
+            <div class="instruction-step">
+                <span class="step-number">2.</span>
+                <span>Add the custom icon to your iPhone Home Screen</span>
+            </div>
+        </div>
+
+        <div id="instructions-loaded" class="instruction-list" style="display: none;">
             <div class="instruction-step">
                 <span class="step-number">1.</span>
                 <svg class="step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 22.35 22.35"><g fill="currentColor" stroke="none"><path d="M10.1719 20.3516C15.7891 20.3516 20.3516 15.7969 20.3516 10.1797C20.3516 4.5625 15.7891 0 10.1719 0C4.55469 0 0 4.5625 0 10.1797C0 15.7969 4.55469 20.3516 10.1719 20.3516ZM10.1719 18.8984C5.35156 18.8984 1.45312 15 1.45312 10.1797C1.45312 5.35938 5.35156 1.46094 10.1719 1.46094C14.9922 1.46094 18.8906 5.35938 18.8906 10.1797C18.8906 15 14.9922 18.8984 10.1719 18.8984Z"/><path d="M14.8359 11.5625C15.6016 11.5625 16.2266 10.9375 16.2266 10.1641C16.2266 9.39844 15.6016 8.77344 14.8359 8.77344C14.0625 8.77344 13.4375 9.39844 13.4375 10.1641C13.4375 10.9375 14.0625 11.5625 14.8359 11.5625Z"/><path d="M10.1641 11.5625C10.9375 11.5625 11.5625 10.9375 11.5625 10.1641C11.5625 9.39844 10.9375 8.77344 10.1641 8.77344C9.39844 8.77344 8.77344 9.39844 8.77344 10.1641C8.77344 10.9375 9.39844 11.5625 10.1641 11.5625Z"/><path d="M5.5 11.5625C6.26562 11.5625 6.89062 10.9375 6.89062 10.1641C6.89062 9.39844 6.25781 8.77344 5.5 8.77344C4.72656 8.77344 4.10156 9.39844 4.10156 10.1641C4.10156 10.9375 4.72656 11.5625 5.5 11.5625Z"/></g></svg>
-                <span class="step-text">Tap the three dot icon in bottom right</span>
+                <span>Tap the three dot icon in bottom right</span>
             </div>
             
             <div class="instruction-step">
                 <span class="step-number">2.</span>
                 <svg class="step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="-1 0.6 19.67 24.34"><g fill="currentColor" stroke="none"><path d="M6.39062 9.30469L4.15625 9.30469C2.38281 9.30469 1.38281 10.2969 1.38281 12.0703L1.38281 19.7891C1.38281 21.5703 2.38281 22.5703 4.15625 22.5703L13.5078 22.5703C15.2891 22.5703 16.2891 21.5703 16.2891 19.7891L16.2891 12.0703C16.2891 10.2969 15.2891 9.30469 13.5078 9.30469L11.2812 9.30469L11.2812 7.91406L13.5078 7.91406C16.1875 7.91406 17.6719 9.40625 17.6719 12.0781L17.6719 19.7891C17.6719 22.4609 16.1875 23.9531 13.5078 23.9531L4.16406 23.9531C1.48438 23.9531 0 22.4609 0 19.7891L0 12.0781C0 9.40625 1.48438 7.91406 4.16406 7.91406L6.39062 7.91406Z"/><path d="M9.46254 3.49778L9.52344 4.99219L9.52344 15.4766C9.52344 15.8438 9.20312 16.1484 8.83594 16.1484C8.46875 16.1484 8.14844 15.8438 8.14844 15.4766L8.14844 4.99219L8.20934 3.49778L8.83594 2.83594Z"/><path d="M5.40625 6.14844C5.57031 6.14844 5.75781 6.07812 5.88281 5.9375L7.58594 4.15625L8.83594 2.83594L10.0859 4.15625L11.7812 5.9375C11.9062 6.07812 12.0859 6.14844 12.25 6.14844C12.6094 6.14844 12.8828 5.89062 12.8828 5.53906C12.8828 5.35938 12.8047 5.21875 12.6797 5.08594L9.33594 1.83594C9.16406 1.66406 9.00781 1.60938 8.83594 1.60938C8.66406 1.60938 8.50781 1.66406 8.33594 1.83594L4.99219 5.08594C4.85938 5.21875 4.78906 5.35938 4.78906 5.53906C4.78906 5.89062 5.04688 6.14844 5.40625 6.14844Z"/></g></svg>
-                <span class="step-text">Tap Share</span>
+                <span>Tap Share</span>
             </div>
 
             <div class="instruction-step">
                 <span class="step-number">3.</span>
                 <svg class="step-icon" xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 20.32 20.32"><g fill="currentColor" stroke="none"><path d="M5.45312 18.3203L12.875 18.3203C14.6484 18.3203 16.0234 17.8203 16.9219 16.9219C17.8438 16.0078 18.3281 14.6328 18.3281 12.8672L18.3281 5.45312C18.3281 3.6875 17.8516 2.32031 16.9219 1.39844C16.0156 0.484375 14.6484 0 12.875 0L5.45312 0C3.67969 0 2.30469 0.5 1.40625 1.39844C0.484375 2.3125 0 3.6875 0 5.45312L0 12.8672C0 14.6328 0.476562 16 1.40625 16.9219C2.3125 17.8281 3.67969 18.3203 5.45312 18.3203ZM5.45312 16.9375C4.125 16.9375 3.10156 16.5781 2.42188 15.9062C1.73438 15.2266 1.38281 14.2031 1.38281 12.8672L1.38281 5.45312C1.38281 4.11719 1.73438 3.09375 2.42188 2.41406C3.09375 1.75 4.125 1.38281 5.45312 1.38281L12.875 1.38281C14.2109 1.38281 15.2266 1.74219 15.9062 2.41406C16.5938 3.09375 16.9453 4.11719 16.9453 5.45312L16.9453 12.8672C16.9453 14.2031 16.5938 15.2266 15.9062 15.9062C15.2344 16.5703 14.2109 16.9375 12.875 16.9375Z"/><path d="M9.89062 13.0234L9.89062 5.26562C9.89062 4.82812 9.58594 4.52344 9.15625 4.52344C8.74219 4.52344 8.45312 4.82812 8.45312 5.26562L8.45312 13.0234C8.45312 13.4531 8.74219 13.7578 9.15625 13.7578C9.58594 13.7578 9.89062 13.4609 9.89062 13.0234ZM5.28906 9.85938L13.0547 9.85938C13.4844 9.85938 13.7812 9.57031 13.7812 9.15625C13.7812 8.71875 13.4844 8.42188 13.0547 8.42188L5.28906 8.42188C4.85156 8.42188 4.55469 8.71875 4.55469 9.15625C4.55469 9.57031 4.85938 9.85938 5.28906 9.85938Z"/></g></svg>
-                <span class="step-text">Then select <strong>"Add to Home Screen"</strong></span>
+                <span>Then select <strong>"Add to Home Screen"</strong></span>
             </div>
         </div>
 
-        <svg class="bounce-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 17.125 20.94"><g fill="currentColor" stroke="none"><path d="M7.5625 18.9453C7.77344 18.9453 7.96875 18.8594 8.13281 18.6875L14.8906 11.9297C15.0547 11.7578 15.125 11.5859 15.125 11.3828C15.125 10.9531 14.8125 10.6328 14.3906 10.6328C14.1875 10.6328 13.9844 10.7031 13.8516 10.8359L11.0781 13.5781L7.55469 17.3906L4.04688 13.5781L1.27344 10.8359C1.14062 10.7031 0.9375 10.6328 0.734375 10.6328C0.3125 10.6328 0 10.9531 0 11.3828C0 11.5859 0.0703125 11.7578 0.234375 11.9297L6.99219 18.6875C7.15625 18.8594 7.35156 18.9453 7.5625 18.9453ZM7.5625 18C7.96094 18 8.23438 17.7188 8.23438 17.3203L8.32031 14.4922L8.32031 0.75C8.32031 0.3125 8.00781 0 7.5625 0C7.11719 0 6.80469 0.3125 6.80469 0.75L6.80469 14.4922L6.89062 17.3281C6.89062 17.7188 7.16406 18 7.5625 18Z"/></g></svg>
+        <svg id="bounce-arrow" class="bounce-arrow" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 17.125 20.94"><g fill="currentColor" stroke="none"><path d="M7.5625 18.9453C7.77344 18.9453 7.96875 18.8594 8.13281 18.6875L14.8906 11.9297C15.0547 11.7578 15.125 11.5859 15.125 11.3828C15.125 10.9531 14.8125 10.6328 14.3906 10.6328C14.1875 10.6328 13.9844 10.7031 13.8516 10.8359L11.0781 13.5781L7.55469 17.3906L4.04688 13.5781L1.27344 10.8359C1.14062 10.7031 0.9375 10.6328 0.734375 10.6328C0.3125 10.6328 0 10.9531 0 11.3828C0 11.5859 0.0703125 11.7578 0.234375 11.9297L6.99219 18.6875C7.15625 18.8594 7.35156 18.9453 7.5625 18.9453ZM7.5625 18C7.96094 18 8.23438 17.7188 8.23438 17.3203L8.32031 14.4922L8.32031 0.75C8.32031 0.3125 8.00781 0 7.5625 0C7.11719 0 6.80469 0.3125 6.80469 0.75L6.80469 14.4922L6.89062 17.3281C6.89062 17.7188 7.16406 18 7.5625 18Z"/></g></svg>
     </div>
 
     <script>
@@ -238,8 +205,10 @@
             const uploadTrigger = document.getElementById('upload-trigger');
             const iconPreview = document.getElementById('icon-preview');
             const dynamicAppleIcon = document.getElementById('dynamic-apple-icon');
-            const instructionOverlay = document.getElementById('instruction-overlay');
-            const initialInstructions = document.getElementById('initial-instructions');
+            
+            const initialInstructions = document.getElementById('instructions-initial');
+            const loadedInstructions = document.getElementById('instructions-loaded');
+            const bounceArrow = document.getElementById('bounce-arrow');
 
             uploadTrigger.addEventListener('click', () => {
                 fileInput.click();
@@ -254,15 +223,14 @@
                 reader.onload = (e) => {
                     const base64Data = e.target.result;
                     
+                    // Render the visual updates
                     iconPreview.src = base64Data;
                     dynamicAppleIcon.href = base64Data;
                     
-                    // Trigger the DOM state transition
-                    initialInstructions.style.opacity = '0';
-                    setTimeout(() => {
-                        initialInstructions.style.display = 'none';
-                        instructionOverlay.classList.add('visible');
-                    }, 300); // Wait for the fade out before removing from layout
+                    // Swap the instruction states instantly
+                    initialInstructions.style.display = 'none';
+                    loadedInstructions.style.display = 'flex';
+                    bounceArrow.style.display = 'block';
                     
                     uploadTrigger.textContent = "Change Icon";
                 };
