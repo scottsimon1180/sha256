@@ -1,730 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-/>
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>SHA256 Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Icon Tester</title>
 
-<style>
-  :root{
-    --bg:#0b0b0c;
-    --card:#141416;
-    --card-2:#1b1b1f;
-    --text:#f5f5f7;
-    --sub:#8e8e93;
-    --line:rgba(255,255,255,0.08);
-    --accent:#32d74b;
-    --accent-dim:rgba(50,215,75,0.16);
-    --blue:#0a84ff;
-    --red:#ff453a;
-    --shadow:0 18px 40px rgba(0,0,0,0.35);
-    --radius-xl:24px;
-    --radius-lg:18px;
-    --radius-md:14px;
-  }
+    <link id="dynamic-apple-icon" rel="apple-touch-icon" href="">
 
-  *{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
-  }
+    <style>
+        /* System font stack and strict body constraints to mimic native applications */
+        :root {
+            --bg-color: #000000;
+            --surface-color: #1c1c1e;
+            --text-color: #ffffff;
+            --accent-color: #0a84ff;
+        }
 
-  html,body{
-    margin:0;
-    padding:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
-    min-height:100%;
-  }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden; /* Disables web-like scrolling */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            -webkit-user-select: none; /* Prevents text selection */
+        }
 
-  body{
-    min-height:100vh;
-    min-height:100dvh;
-  }
+        /* The container holding the visual prototype */
+        #preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
 
-  .app{
-    width:100%;
-    max-width:430px;
-    margin:0 auto;
-    min-height:100vh;
-    min-height:100dvh;
-    padding:
-      max(18px, env(safe-area-inset-top))
-      16px
-      max(18px, env(safe-area-inset-bottom))
-      16px;
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-  }
+        /* Simulates the continuous squircle of an iOS icon. 
+           180x180 is the standard maximum resolution for an iPhone touch icon.
+        */
+        #icon-preview {
+            width: 180px;
+            height: 180px;
+            background-color: var(--surface-color);
+            border-radius: 40px; 
+            object-fit: cover;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none; /* Hidden until an image is loaded */
+            margin-bottom: 20px;
+        }
 
-  .header{
-    padding:8px 2px 2px;
-  }
+        /* Native-feeling button styling */
+        .action-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 16px 32px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
 
-  .title{
-    margin:0;
-    font-size:32px;
-    line-height:1.05;
-    font-weight:700;
-    letter-spacing:-0.03em;
-  }
+        .action-button:active {
+            opacity: 0.7;
+        }
 
-  .subtitle{
-    margin:8px 0 0;
-    color:var(--sub);
-    font-size:15px;
-    line-height:1.35;
-  }
+        /* Hidden file input invoked via the action button */
+        #file-input {
+            display: none;
+        }
 
-  .card{
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00)), var(--card);
-    border:1px solid var(--line);
-    border-radius:var(--radius-xl);
-    box-shadow:var(--shadow);
-    padding:16px;
-  }
+        /* The instructional overlay directed at the physical Safari Share button.
+           Positioned absolutely at the bottom to account for the Home Indicator.
+        */
+        #instruction-overlay {
+            position: fixed;
+            bottom: -100px;
+            left: 0;
+            width: 100%;
+            background: rgba(28, 28, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 20px 0 40px 0; /* Padding accounts for the safe area */
+            text-align: center;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
-  .section-label{
-    margin:0 0 10px;
-    font-size:13px;
-    color:var(--sub);
-    font-weight:600;
-    letter-spacing:0.02em;
-    text-transform:uppercase;
-  }
+        #instruction-overlay.visible {
+            bottom: 0;
+        }
 
-  .picker-wrap{
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-  }
+        .instruction-text {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0 20px 10px 20px;
+        }
 
-  .file-button{
-    appearance:none;
-    border:none;
-    background:var(--blue);
-    color:white;
-    width:100%;
-    min-height:54px;
-    border-radius:16px;
-    font-size:17px;
-    font-weight:700;
-    letter-spacing:-0.01em;
-    cursor:pointer;
-  }
+        .bounce-arrow {
+            font-size: 24px;
+            animation: bounce 1.5s infinite;
+        }
 
-  .file-button:active{
-    transform:scale(0.995);
-    filter:brightness(0.96);
-  }
-
-  .hidden-input{
-    display:none;
-  }
-
-  .file-meta{
-    background:var(--card-2);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:12px 14px;
-    display:grid;
-    gap:8px;
-  }
-
-  .meta-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:12px;
-    font-size:14px;
-  }
-
-  .meta-key{
-    color:var(--sub);
-    flex:0 0 auto;
-  }
-
-  .meta-value{
-    text-align:right;
-    word-break:break-word;
-  }
-
-  .progress-block{
-    display:grid;
-    gap:10px;
-  }
-
-  .progress-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-  }
-
-  .status{
-    color:var(--sub);
-    min-width:0;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-  }
-
-  .percent{
-    color:var(--text);
-    font-weight:700;
-    font-variant-numeric:tabular-nums;
-  }
-
-  .bar{
-    height:14px;
-    width:100%;
-    border-radius:999px;
-    background:#0d0d0f;
-    border:1px solid var(--line);
-    overflow:hidden;
-    position:relative;
-  }
-
-  .bar-fill{
-    height:100%;
-    width:0%;
-    border-radius:999px;
-    background:
-      linear-gradient(90deg,
-        rgba(50,215,75,0.88) 0%,
-        rgba(50,215,75,1) 48%,
-        rgba(120,255,145,0.96) 100%);
-    box-shadow:0 0 20px rgba(50,215,75,0.28);
-    transition:width 0.08s linear;
-  }
-
-  .progress-detail{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:12px;
-    font-size:13px;
-    color:var(--sub);
-    font-variant-numeric:tabular-nums;
-  }
-
-  .hash-box{
-    background:#070707;
-    border:1px solid rgba(50,215,75,0.18);
-    border-radius:18px;
-    padding:14px;
-    min-height:148px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .hash-label{
-    margin:0;
-    font-size:13px;
-    color:#7adf89;
-    font-weight:700;
-    letter-spacing:0.02em;
-    text-transform:uppercase;
-  }
-
-  .hash-output{
-    margin:0;
-    color:var(--accent);
-    font-size:15px;
-    line-height:1.55;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-    word-break:break-all;
-    white-space:pre-wrap;
-    min-height:72px;
-  }
-
-  .hash-placeholder{
-    color:#4f7e59;
-  }
-
-  .actions{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:10px;
-  }
-
-  .btn{
-    appearance:none;
-    border:none;
-    min-height:50px;
-    border-radius:15px;
-    font-size:16px;
-    font-weight:700;
-    cursor:pointer;
-  }
-
-  .btn-primary{
-    background:var(--accent);
-    color:#07110a;
-  }
-
-  .btn-secondary{
-    background:#2c2c2e;
-    color:var(--text);
-  }
-
-  .btn-danger{
-    background:#2c1a1a;
-    color:#ff8b84;
-  }
-
-  .btn:disabled{
-    opacity:0.45;
-    cursor:not-allowed;
-  }
-
-  .foot{
-    margin-top:auto;
-    text-align:center;
-    color:var(--sub);
-    font-size:12px;
-    line-height:1.4;
-    padding:4px 8px 0;
-  }
-</style>
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(10px); }
+            60% { transform: translateY(5px); }
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <div class="header">
-      <h1 class="title">SHA256</h1>
-      <p class="subtitle">
-        Select a file and generate its SHA-256 hash locally on your device.
-      </p>
+
+    <div id="preview-container">
+        <img id="icon-preview" alt="Icon Preview" />
+        
+        <button class="action-button" id="upload-trigger">Select Icon Image</button>
+        <input type="file" id="file-input" accept="image/png, image/jpeg" />
     </div>
 
-    <div class="card">
-      <p class="section-label">File</p>
-
-      <div class="picker-wrap">
-        <button id="pickBtn" class="file-button" type="button">Select File</button>
-        <input id="fileInput" class="hidden-input" type="file" />
-
-        <div class="file-meta">
-          <div class="meta-row">
-            <div class="meta-key">Name</div>
-            <div id="fileName" class="meta-value">No file selected</div>
-          </div>
-          <div class="meta-row">
-            <div class="meta-key">Size</div>
-            <div id="fileSize" class="meta-value">—</div>
-          </div>
-        </div>
-      </div>
+    <div id="instruction-overlay">
+        <p class="instruction-text">Icon loaded. Tap the Share button below, then select <strong>"Add to Home Screen"</strong>.</p>
+        <div class="bounce-arrow">⬇</div>
     </div>
 
-    <div class="card">
-      <p class="section-label">Progress</p>
-
-      <div class="progress-block">
-        <div class="progress-top">
-          <div id="statusText" class="status">Waiting for file…</div>
-          <div id="percentText" class="percent">0%</div>
-        </div>
-
-        <div class="bar" aria-label="Hashing progress">
-          <div id="barFill" class="bar-fill"></div>
-        </div>
-
-        <div class="progress-detail">
-          <div id="bytesText">0 B / 0 B</div>
-          <div id="speedText">—</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <p class="section-label">Result</p>
-
-      <div class="hash-box">
-        <p class="hash-label">SHA-256 Digest</p>
-        <pre id="hashOutput" class="hash-output"><span class="hash-placeholder">Hash will appear here…</span></pre>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="generateBtn" class="btn btn-primary" type="button" disabled>Generate</button>
-      <button id="copyBtn" class="btn btn-secondary" type="button" disabled>Copy</button>
-      <button id="resetBtn" class="btn btn-danger" type="button">Reset</button>
-    </div>
-
-    <div class="foot">
-      Runs fully in-browser. Your file is processed locally and is not uploaded.
-    </div>
-  </div>
-
-<script>
-/* =========================================================
-   Incremental SHA-256
-   Pure JavaScript implementation with chunked updates
-   ========================================================= */
-class SHA256 {
-  constructor() {
-    this._k = new Uint32Array([
-      0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-      0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-      0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-      0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-      0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-      0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-      0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-      0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
-    ]);
-    this.init();
-  }
-
-  init() {
-    this._h = new Uint32Array([
-      0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
-      0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
-    ]);
-    this._buffer = new Uint8Array(64);
-    this._bufferLength = 0;
-    this._bytesHashed = 0;
-    this._finished = false;
-    this._temp = new Uint32Array(64);
-    return this;
-  }
-
-  _rotr(x, n) {
-    return (x >>> n) | (x << (32 - n));
-  }
-
-  _compress(chunk, offset = 0) {
-    const w = this._temp;
-
-    for (let i = 0; i < 16; i++) {
-      const j = offset + i * 4;
-      w[i] =
-        (chunk[j] << 24) |
-        (chunk[j + 1] << 16) |
-        (chunk[j + 2] << 8) |
-        (chunk[j + 3]);
-    }
-
-    for (let i = 16; i < 64; i++) {
-      const v1 = w[i - 15];
-      const s0 = (this._rotr(v1, 7) ^ this._rotr(v1, 18) ^ (v1 >>> 3)) >>> 0;
-      const v2 = w[i - 2];
-      const s1 = (this._rotr(v2, 17) ^ this._rotr(v2, 19) ^ (v2 >>> 10)) >>> 0;
-      w[i] = (((w[i - 16] + s0) >>> 0) + ((w[i - 7] + s1) >>> 0)) >>> 0;
-    }
-
-    let a = this._h[0];
-    let b = this._h[1];
-    let c = this._h[2];
-    let d = this._h[3];
-    let e = this._h[4];
-    let f = this._h[5];
-    let g = this._h[6];
-    let h = this._h[7];
-
-    for (let i = 0; i < 64; i++) {
-      const S1 = (this._rotr(e, 6) ^ this._rotr(e, 11) ^ this._rotr(e, 25)) >>> 0;
-      const ch = ((e & f) ^ (~e & g)) >>> 0;
-      const t1 = (((((h + S1) >>> 0) + ch) >>> 0) + ((this._k[i] + w[i]) >>> 0)) >>> 0;
-      const S0 = (this._rotr(a, 2) ^ this._rotr(a, 13) ^ this._rotr(a, 22)) >>> 0;
-      const maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
-      const t2 = (S0 + maj) >>> 0;
-
-      h = g;
-      g = f;
-      f = e;
-      e = (d + t1) >>> 0;
-      d = c;
-      c = b;
-      b = a;
-      a = (t1 + t2) >>> 0;
-    }
-
-    this._h[0] = (this._h[0] + a) >>> 0;
-    this._h[1] = (this._h[1] + b) >>> 0;
-    this._h[2] = (this._h[2] + c) >>> 0;
-    this._h[3] = (this._h[3] + d) >>> 0;
-    this._h[4] = (this._h[4] + e) >>> 0;
-    this._h[5] = (this._h[5] + f) >>> 0;
-    this._h[6] = (this._h[6] + g) >>> 0;
-    this._h[7] = (this._h[7] + h) >>> 0;
-  }
-
-  update(data) {
-    if (this._finished) {
-      throw new Error("SHA256: can't update because hash was finished.");
-    }
-
-    let position = 0;
-    const byteLength = data.length;
-    this._bytesHashed += byteLength;
-
-    while (byteLength - position + this._bufferLength >= 64) {
-      for (; this._bufferLength < 64;) {
-        this._buffer[this._bufferLength++] = data[position++];
-      }
-      this._compress(this._buffer);
-      this._bufferLength = 0;
-    }
-
-    while (position < byteLength) {
-      this._buffer[this._bufferLength++] = data[position++];
-    }
-
-    return this;
-  }
-
-  digest() {
-    if (!this._finished) {
-      this._finished = true;
-
-      const bytesHashed = this._bytesHashed;
-      const left = this._bufferLength;
-      const bitLenHi = Math.floor((bytesHashed * 8) / 0x100000000);
-      const bitLenLo = (bytesHashed * 8) >>> 0;
-
-      this._buffer[left] = 0x80;
-      for (let i = left + 1; i < 64; i++) this._buffer[i] = 0;
-
-      if (left >= 56) {
-        this._compress(this._buffer);
-        for (let i = 0; i < 64; i++) this._buffer[i] = 0;
-      }
-
-      this._buffer[56] = (bitLenHi >>> 24) & 0xff;
-      this._buffer[57] = (bitLenHi >>> 16) & 0xff;
-      this._buffer[58] = (bitLenHi >>> 8) & 0xff;
-      this._buffer[59] = bitLenHi & 0xff;
-      this._buffer[60] = (bitLenLo >>> 24) & 0xff;
-      this._buffer[61] = (bitLenLo >>> 16) & 0xff;
-      this._buffer[62] = (bitLenLo >>> 8) & 0xff;
-      this._buffer[63] = bitLenLo & 0xff;
-
-      this._compress(this._buffer);
-    }
-
-    const out = new Uint8Array(32);
-    for (let i = 0; i < 8; i++) {
-      out[i * 4] = (this._h[i] >>> 24) & 0xff;
-      out[i * 4 + 1] = (this._h[i] >>> 16) & 0xff;
-      out[i * 4 + 2] = (this._h[i] >>> 8) & 0xff;
-      out[i * 4 + 3] = this._h[i] & 0xff;
-    }
-    return out;
-  }
-
-  hex() {
-    const digest = this.digest();
-    let hex = "";
-    for (let i = 0; i < digest.length; i++) {
-      hex += digest[i].toString(16).padStart(2, "0");
-    }
-    return hex;
-  }
-}
-
-/* =========================================================
-   UI Logic
-   ========================================================= */
-const fileInput   = document.getElementById("fileInput");
-const pickBtn     = document.getElementById("pickBtn");
-const generateBtn = document.getElementById("generateBtn");
-const copyBtn     = document.getElementById("copyBtn");
-const resetBtn    = document.getElementById("resetBtn");
-
-const fileNameEl  = document.getElementById("fileName");
-const fileSizeEl  = document.getElementById("fileSize");
-
-const statusText  = document.getElementById("statusText");
-const percentText = document.getElementById("percentText");
-const barFill     = document.getElementById("barFill");
-const bytesText   = document.getElementById("bytesText");
-const speedText   = document.getElementById("speedText");
-
-const hashOutput  = document.getElementById("hashOutput");
-
-let selectedFile = null;
-let currentHash = "";
-let isProcessing = false;
-
-const CHUNK_SIZE = 1024 * 1024 * 2; // 2 MB chunks
-
-pickBtn.addEventListener("click", () => {
-  if (isProcessing) return;
-  fileInput.click();
-});
-
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-  selectedFile = file;
-  currentHash = "";
-  copyBtn.disabled = true;
-
-  if (!file) {
-    fileNameEl.textContent = "No file selected";
-    fileSizeEl.textContent = "—";
-    setIdleProgress();
-    setHashPlaceholder();
-    generateBtn.disabled = true;
-    return;
-  }
-
-  fileNameEl.textContent = file.name;
-  fileSizeEl.textContent = formatBytes(file.size);
-  statusText.textContent = "Ready to hash";
-  percentText.textContent = "0%";
-  barFill.style.width = "0%";
-  bytesText.textContent = `0 B / ${formatBytes(file.size)}`;
-  speedText.textContent = "—";
-  setHashPlaceholder();
-  generateBtn.disabled = false;
-});
-
-generateBtn.addEventListener("click", async () => {
-  if (!selectedFile || isProcessing) return;
-
-  isProcessing = true;
-  generateBtn.disabled = true;
-  copyBtn.disabled = true;
-  pickBtn.disabled = true;
-  resetBtn.disabled = true;
-
-  setHashText("");
-  statusText.textContent = "Hashing…";
-  percentText.textContent = "0%";
-  barFill.style.width = "0%";
-  bytesText.textContent = `0 B / ${formatBytes(selectedFile.size)}`;
-  speedText.textContent = "Starting…";
-
-  try {
-    const sha = new SHA256();
-    const total = selectedFile.size;
-    let offset = 0;
-
-    const startTime = performance.now();
-
-    while (offset < total) {
-      const chunk = selectedFile.slice(offset, offset + CHUNK_SIZE);
-      const buffer = await chunk.arrayBuffer();
-      sha.update(new Uint8Array(buffer));
-
-      offset += buffer.byteLength;
-
-      const progress = total === 0 ? 100 : (offset / total) * 100;
-      const elapsedSeconds = Math.max((performance.now() - startTime) / 1000, 0.001);
-      const bytesPerSecond = offset / elapsedSeconds;
-
-      percentText.textContent = `${progress.toFixed(1)}%`;
-      barFill.style.width = `${progress}%`;
-      bytesText.textContent = `${formatBytes(offset)} / ${formatBytes(total)}`;
-      speedText.textContent = `${formatBytes(bytesPerSecond)}/s`;
-
-      await nextFrame();
-    }
-
-    currentHash = sha.hex();
-    setHashText(currentHash);
-
-    statusText.textContent = "Complete";
-    percentText.textContent = "100%";
-    barFill.style.width = "100%";
-    bytesText.textContent = `${formatBytes(total)} / ${formatBytes(total)}`;
-    speedText.textContent = "Done";
-    copyBtn.disabled = false;
-  } catch (error) {
-    console.error(error);
-    statusText.textContent = "Error";
-    speedText.textContent = "Failed";
-    setHashText("An error occurred while hashing the file.");
-  } finally {
-    isProcessing = false;
-    pickBtn.disabled = false;
-    resetBtn.disabled = false;
-    generateBtn.disabled = !selectedFile;
-  }
-});
-
-copyBtn.addEventListener("click", async () => {
-  if (!currentHash) return;
-
-  try {
-    await navigator.clipboard.writeText(currentHash);
-    statusText.textContent = "Hash copied";
-  } catch {
-    fallbackCopyText(currentHash);
-    statusText.textContent = "Hash copied";
-  }
-});
-
-resetBtn.addEventListener("click", () => {
-  if (isProcessing) return;
-
-  fileInput.value = "";
-  selectedFile = null;
-  currentHash = "";
-
-  fileNameEl.textContent = "No file selected";
-  fileSizeEl.textContent = "—";
-  generateBtn.disabled = true;
-  copyBtn.disabled = true;
-
-  setIdleProgress();
-  setHashPlaceholder();
-});
-
-function setIdleProgress() {
-  statusText.textContent = "Waiting for file…";
-  percentText.textContent = "0%";
-  barFill.style.width = "0%";
-  bytesText.textContent = "0 B / 0 B";
-  speedText.textContent = "—";
-}
-
-function setHashPlaceholder() {
-  hashOutput.innerHTML = '<span class="hash-placeholder">Hash will appear here…</span>';
-}
-
-function setHashText(text) {
-  hashOutput.textContent = text;
-}
-
-function formatBytes(bytes) {
-  if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
-  if (bytes === 0) return "0 B";
-
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const exp = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / Math.pow(1024, exp);
-
-  if (exp === 0) return `${value.toFixed(0)} ${units[exp]}`;
-  if (value >= 100) return `${value.toFixed(0)} ${units[exp]}`;
-  if (value >= 10) return `${value.toFixed(1)} ${units[exp]}`;
-  return `${value.toFixed(2)} ${units[exp]}`;
-}
-
-function nextFrame() {
-  return new Promise(resolve => requestAnimationFrame(resolve));
-}
-
-function fallbackCopyText(text) {
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  document.body.removeChild(ta);
-}
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('file-input');
+            const uploadTrigger = document.getElementById('upload-trigger');
+            const iconPreview = document.getElementById('icon-preview');
+            const dynamicAppleIcon = document.getElementById('dynamic-apple-icon');
+            const instructionOverlay = document.getElementById('instruction-overlay');
+
+            // Route the button click to the hidden input
+            uploadTrigger.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Process the file once selected
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    const base64Data = e.target.result;
+                    
+                    // 1. Render the image on the screen to confirm selection
+                    iconPreview.src = base64Data;
+                    iconPreview.style.display = 'block';
+                    
+                    // 2. Inject the Base64 data into the document head for Safari to capture
+                    dynamicAppleIcon.href = base64Data;
+                    
+                    // 3. Trigger the animation to display the manual instructions
+                    instructionOverlay.classList.add('visible');
+                    
+                    // Optional: Update button text to imply a reset/change state
+                    uploadTrigger.textContent = "Change Image";
+                };
+
+                // Read the file as a data URL to circumvent local path restrictions
+                reader.readAsDataURL(file);
+            });
+        });
+    </script>
 </body>
 </html>
